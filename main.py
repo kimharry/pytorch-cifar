@@ -89,6 +89,10 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
+train_losses = []
+train_accs = []
+test_losses = []
+test_accs = []
 
 # Training
 def train(epoch):
@@ -112,6 +116,11 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+    
+    epoch_total_loss = train_loss / (batch_idx + 1)
+    epoch_total_acc = 100. * correct / total
+    train_losses.append(epoch_total_loss)
+    train_accs.append(epoch_total_acc)
 
 
 def test(epoch):
@@ -133,9 +142,15 @@ def test(epoch):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                          % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        
+    
 
     # Save checkpoint.
     acc = 100.*correct/total
+    epoch_total_loss = test_loss / (batch_idx + 1)
+    test_losses.append(epoch_total_loss)
+    test_accs.append(acc)
+
     if acc > best_acc:
         print('Saving..')
         state = {
@@ -149,7 +164,32 @@ def test(epoch):
         best_acc = acc
 
 
-for epoch in range(start_epoch, start_epoch+100):
+def plot_loss_acc():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # plot training loss, accuracy, and test loss, accuracy in one figure
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+    ax[0, 0].plot(np.arange(len(train_losses)), train_losses, label='Train Loss')
+    ax[0, 0].plot(np.arange(len(test_losses)), test_losses, label='Test Loss')
+    ax[0, 0].set_title('Loss')
+    ax[0, 0].set_xlabel('Epoch')
+    ax[0, 0].set_ylabel('Loss')
+    ax[0, 0].legend()
+    ax[0, 1].plot(np.arange(len(train_accs)), train_accs, label='Train Accuracy')
+    ax[0, 1].plot(np.arange(len(test_accs)), test_accs, label='Test Accuracy')
+    ax[0, 1].set_title('Accuracy')
+    ax[0, 1].set_xlabel('Epoch')
+    ax[0, 1].set_ylabel('Accuracy')
+    ax[0, 1].legend()
+    ax[1, 0].axis('off')
+    ax[1, 1].axis('off')
+    plt.tight_layout()
+    plt.show()
+
+for epoch in range(start_epoch, start_epoch+10):
     train(epoch)
     test(epoch)
     scheduler.step()
+
+plot_loss_acc()
