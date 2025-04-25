@@ -20,7 +20,7 @@ import numpy as np
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', '-l', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', '-l', default=0.01, type=float, help='learning rate')
 parser.add_argument('-num_epochs', '-n', default=200, type=int, help='number of epochs to train')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
@@ -79,6 +79,11 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
+train_accs = []
+train_losses = []
+test_accs = []
+test_losses = []
+
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -88,15 +93,15 @@ if args.resume:
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 
+    train_accs = checkpoint['train_accs']
+    train_losses = checkpoint['train_losses']
+    test_accs = checkpoint['test_accs']
+    test_losses = checkpoint['test_losses']
+
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-
-train_losses = []
-train_accs = []
-test_losses = []
-test_accs = []
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs)
 
 # Training
 def train(epoch):
@@ -161,6 +166,10 @@ def test(epoch):
             'net': net.state_dict(),
             'acc': acc,
             'epoch': epoch,
+            'train_accs': train_accs,
+            'test_accs': test_accs,
+            'train_losses': train_losses,
+            'test_losses': test_losses,
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
@@ -193,11 +202,6 @@ def plot_loss_acc():
     plt.savefig('loss_acc.png')
     plt.show()
 
-# for epoch in range(start_epoch, start_epoch+args.num_epochs):
-#     train(epoch)
-#     test(epoch)
-#     scheduler.step()
-
 def print_feature_size():
     # out = F.relu(self.conv1(x))
     # out = F.max_pool2d(out, 2)
@@ -228,5 +232,11 @@ def print_feature_size():
     print(f"After fc2 size: {out.size()}")
     out = net.fc3(out)
     print(f"After fc3 size: {out.size()}")
+
+for epoch in range(start_epoch, start_epoch+args.num_epochs):
+    train(epoch)
+    test(epoch)
+    scheduler.step()
+    print(f"Learning rate: {scheduler.get_last_lr()[0]}")
 
 plot_loss_acc()
