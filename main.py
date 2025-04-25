@@ -14,11 +14,15 @@ import argparse
 from models import *
 from utils import progress_bar
 
+import matplotlib; matplotlib.use('tkagg')
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--resume', '-r', action='store_true',
-                    help='resume from checkpoint')
+parser.add_argument('--lr', '-l', default=0.1, type=float, help='learning rate')
+parser.add_argument('-num_epochs', '-n', default=200, type=int, help='number of epochs to train')
+parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -165,29 +169,31 @@ def test(epoch):
 
 
 def plot_loss_acc():
-    import matplotlib.pyplot as plt
-    import numpy as np
-
     # plot training loss, accuracy, and test loss, accuracy in one figure
-    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
-    ax[0, 0].plot(np.arange(len(train_losses)), train_losses, label='Train Loss')
-    ax[0, 0].plot(np.arange(len(test_losses)), test_losses, label='Test Loss')
-    ax[0, 0].set_title('Loss')
-    ax[0, 0].set_xlabel('Epoch')
-    ax[0, 0].set_ylabel('Loss')
-    ax[0, 0].legend()
-    ax[0, 1].plot(np.arange(len(train_accs)), train_accs, label='Train Accuracy')
-    ax[0, 1].plot(np.arange(len(test_accs)), test_accs, label='Test Accuracy')
-    ax[0, 1].set_title('Accuracy')
-    ax[0, 1].set_xlabel('Epoch')
-    ax[0, 1].set_ylabel('Accuracy')
-    ax[0, 1].legend()
-    ax[1, 0].axis('off')
-    ax[1, 1].axis('off')
+    fig, ax1 = plt.subplots(figsize=(10, 8))
+    ax2 = ax1.twinx()
+
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.plot(np.arange(len(train_losses)), train_losses, label='Train Loss', color='blue')
+    ax1.plot(np.arange(len(test_losses)), test_losses, label='Test Loss', color='orange')
+
+    ax2.plot(np.arange(len(train_accs)), train_accs, label='Train Accuracy', color='green')
+    ax2.plot(np.arange(len(test_accs)), test_accs, label='Test Accuracy', color='red')
+
+    ax2.set_ylabel('Accuracy')
+
+    fig.legend()
     plt.tight_layout()
+    plt.grid(linestyle='--', alpha=0.5)
+    plt.title('Loss and Accuracy over Epochs')
+    plt.xticks(np.arange(len(train_losses)), np.arange(1, len(train_losses) + 1))
+    ax1.set_ylim(0, max(max(train_losses), max(test_losses)) + 1)
+    ax2.set_ylim(0, 100)
+    plt.savefig('loss_acc.png')
     plt.show()
 
-for epoch in range(start_epoch, start_epoch+10):
+for epoch in range(start_epoch, start_epoch+args.num_epochs):
     train(epoch)
     test(epoch)
     scheduler.step()
