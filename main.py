@@ -193,9 +193,40 @@ def plot_loss_acc():
     plt.savefig('loss_acc.png')
     plt.show()
 
-for epoch in range(start_epoch, start_epoch+args.num_epochs):
-    train(epoch)
-    test(epoch)
-    scheduler.step()
+# for epoch in range(start_epoch, start_epoch+args.num_epochs):
+#     train(epoch)
+#     test(epoch)
+#     scheduler.step()
+
+def print_feature_size():
+    # out = F.relu(self.conv1(x))
+    # out = F.max_pool2d(out, 2)
+    # out = F.relu(self.conv2(out))
+    # out = F.max_pool2d(out, 2)
+    # out = out.view(out.size(0), -1)
+    # out = F.relu(self.fc1(out))
+    # out = F.relu(self.fc2(out))
+    # out = self.fc3(out)
+
+    x, targets = next(iter(trainloader))
+    x = x.to(device)
+
+    print(f"Input size: {x.size()}")
+    out = F.relu(net.conv1(x))
+    print(f"After conv1 size: {out.size()}")
+    out = F.max_pool2d(out, 2)
+    print(f"After max_pool2d conv1 size: {out.size()}")
+    out = F.relu(net.conv2(out))
+    print(f"After conv2 size: {out.size()}")
+    out = F.max_pool2d(out, 2)
+    print(f"After max_pool2d conv2 size: {out.size()}")
+    out = out.view(out.size(0), -1)
+    print(f"After view size: {out.size()}")
+    out = F.relu(net.fc1(out))
+    print(f"After fc1 size: {out.size()}")
+    out = F.relu(net.fc2(out))
+    print(f"After fc2 size: {out.size()}")
+    out = net.fc3(out)
+    print(f"After fc3 size: {out.size()}")
 
 plot_loss_acc()
