@@ -35,7 +35,7 @@ transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
 transform_test = transforms.Compose([
@@ -46,7 +46,7 @@ transform_test = transforms.Compose([
 trainset = torchvision.datasets.CIFAR10(
     root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=128, shuffle=True, num_workers=2)
+    trainset, batch_size=128, shuffle=False, num_workers=2)
 
 testset = torchvision.datasets.CIFAR10(
     root='./data', train=False, download=True, transform=transform_test)
@@ -233,20 +233,20 @@ def print_feature_size():
     out = net.fc3(out)
     print(f"After fc3 size: {out.size()}")
 
-for epoch in range(start_epoch, start_epoch+args.num_epochs):
-    train(epoch)
-    test(epoch)
-    scheduler.step()
-    print(f"Learning rate: {scheduler.get_last_lr()[0]}")
+# for epoch in range(start_epoch, start_epoch+args.num_epochs):
+#     train(epoch)
+#     test(epoch)
+#     scheduler.step()
+#     print(f"Learning rate: {scheduler.get_last_lr()[0]}")
 
-plot_loss_acc()
+# plot_loss_acc()
 
 # visualize the first image of the input mini-batch in RGB space. and check the range of each rgb channel
-# images, labels = next(iter(testloader))
-# print(f"R: {images[0][0].min()} - {images[0][0].max()}")
-# print(f"G: {images[0][1].min()} - {images[0][1].max()}")
-# print(f"B: {images[0][2].min()} - {images[0][2].max()}")
-# npimg = images.numpy()
-# plt.imshow(npimg[0].transpose(1, 2, 0))
-# plt.title(f"Label: {classes[labels[0]]}")
-# plt.show()
+images, labels = next(iter(trainloader))
+print(f"R: {images[0][0].min()} - {images[0][0].max()}")
+print(f"G: {images[0][1].min()} - {images[0][1].max()}")
+print(f"B: {images[0][2].min()} - {images[0][2].max()}")
+npimg = images.numpy()
+plt.imshow(npimg[0].transpose(1, 2, 0))
+plt.title(f"Label: {classes[labels[0]]}")
+plt.show()
