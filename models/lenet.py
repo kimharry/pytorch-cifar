@@ -10,11 +10,15 @@ class LeNet(nn.Module):
         self.fc1   = nn.Linear(16*5*5, 120)
         self.fc2   = nn.Linear(120, 84)
         self.fc3   = nn.Linear(84, 10)
+        self.bn1    = nn.BatchNorm2d(6)
+        self.bn2    = nn.BatchNorm2d(16)
 
     def forward(self, x):
         out = F.relu(self.conv1(x))
+        out = self.bn1(out)
         out = F.max_pool2d(out, 2)
         out = F.relu(self.conv2(out))
+        out = self.bn2(out)
         out = F.max_pool2d(out, 2)
         out = out.view(out.size(0), -1)
         out = F.relu(self.fc1(out))

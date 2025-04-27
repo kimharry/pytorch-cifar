@@ -240,3 +240,13 @@ for epoch in range(start_epoch, start_epoch+args.num_epochs):
     print(f"Learning rate: {scheduler.get_last_lr()[0]}")
 
 plot_loss_acc()
+
+# visualize the first image of the input mini-batch in RGB space. and check the range of each rgb channel
+# images, labels = next(iter(testloader))
+# print(f"R: {images[0][0].min()} - {images[0][0].max()}")
+# print(f"G: {images[0][1].min()} - {images[0][1].max()}")
+# print(f"B: {images[0][2].min()} - {images[0][2].max()}")
+# npimg = images.numpy()
+# plt.imshow(npimg[0].transpose(1, 2, 0))
+# plt.title(f"Label: {classes[labels[0]]}")
+# plt.show()
