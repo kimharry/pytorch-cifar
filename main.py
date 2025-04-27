@@ -23,6 +23,7 @@ parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', '-l', default=0.01, type=float, help='learning rate')
 parser.add_argument('-num_epochs', '-n', default=200, type=int, help='number of epochs to train')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--batch_norm', '-b', action='store_true', help='use batch normalization layer')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -58,22 +59,10 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 
 # Model
 print('==> Building model..')
-# net = VGG('VGG19')
-# net = ResNet18()
-# net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
-# net = SimpleDLA()
-net = LeNet()
+if args.batch_norm:
+    net = LeNet_BN()
+else:
+    net = LeNet()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -202,7 +191,7 @@ def plot_loss_acc():
     plt.savefig('loss_acc.png')
     plt.show()
 
-def print_feature_size():
+def check_feature_size():
     # out = F.relu(self.conv1(x))
     # out = F.max_pool2d(out, 2)
     # out = F.relu(self.conv2(out))
@@ -211,42 +200,31 @@ def print_feature_size():
     # out = F.relu(self.fc1(out))
     # out = F.relu(self.fc2(out))
     # out = self.fc3(out)
+    import pdb
 
     x, targets = next(iter(trainloader))
     x = x.to(device)
+    net = LeNet().to(device)
 
-    print(f"Input size: {x.size()}")
-    out = F.relu(net.conv1(x))
-    print(f"After conv1 size: {out.size()}")
-    out = F.max_pool2d(out, 2)
-    print(f"After max_pool2d conv1 size: {out.size()}")
-    out = F.relu(net.conv2(out))
-    print(f"After conv2 size: {out.size()}")
-    out = F.max_pool2d(out, 2)
-    print(f"After max_pool2d conv2 size: {out.size()}")
-    out = out.view(out.size(0), -1)
-    print(f"After view size: {out.size()}")
-    out = F.relu(net.fc1(out))
-    print(f"After fc1 size: {out.size()}")
-    out = F.relu(net.fc2(out))
-    print(f"After fc2 size: {out.size()}")
-    out = net.fc3(out)
-    print(f"After fc3 size: {out.size()}")
+    pdb.set_trace()
+    net.forward(x)
 
-# for epoch in range(start_epoch, start_epoch+args.num_epochs):
-#     train(epoch)
-#     test(epoch)
-#     scheduler.step()
-#     print(f"Learning rate: {scheduler.get_last_lr()[0]}")
+# check_feature_size()
 
-# plot_loss_acc()
+for epoch in range(start_epoch, start_epoch+args.num_epochs):
+    train(epoch)
+    test(epoch)
+    scheduler.step()
+    print(f"Learning rate: {scheduler.get_last_lr()[0]}")
+
+plot_loss_acc()
 
 # visualize the first image of the input mini-batch in RGB space. and check the range of each rgb channel
-images, labels = next(iter(trainloader))
-print(f"R: {images[0][0].min()} - {images[0][0].max()}")
-print(f"G: {images[0][1].min()} - {images[0][1].max()}")
-print(f"B: {images[0][2].min()} - {images[0][2].max()}")
-npimg = images.numpy()
-plt.imshow(npimg[0].transpose(1, 2, 0))
-plt.title(f"Label: {classes[labels[0]]}")
-plt.show()
+# images, labels = next(iter(trainloader))
+# print(f"R: {images[0][0].min()} - {images[0][0].max()}")
+# print(f"G: {images[0][1].min()} - {images[0][1].max()}")
+# print(f"B: {images[0][2].min()} - {images[0][2].max()}")
+# npimg = images.numpy()
+# plt.imshow(npimg[0].transpose(1, 2, 0))
+# plt.title(f"Label: {classes[labels[0]]}")
+# plt.show()
