@@ -8,13 +8,15 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 
+from torch.utils.tensorboard import SummaryWriter
+
 import os
 import argparse
 
 from models import *
 from utils import progress_bar
 
-import matplotlib; matplotlib.use('tkagg')
+# import matplotlib; matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -47,12 +49,12 @@ transform_test = transforms.Compose([
 trainset = torchvision.datasets.CIFAR10(
     root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=128, shuffle=False, num_workers=2)
+    trainset, batch_size=128, shuffle=False, num_workers=6)
 
 testset = torchvision.datasets.CIFAR10(
     root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(
-    testset, batch_size=100, shuffle=False, num_workers=2)
+    testset, batch_size=100, shuffle=False, num_workers=6)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck')
@@ -92,6 +94,8 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs)
 
+tb = SummaryWriter('./runs/lenet_bn' if args.batch_norm else './runs/lenet')
+
 # Training
 def train(epoch):
     print('\nEpoch: %d' % epoch)
@@ -114,6 +118,9 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        
+        tb.add_scalar('Train Loss', train_loss/(batch_idx+1), epoch)
+        tb.add_scalar('Train Acc', 100.*correct/total, epoch)
     
     epoch_total_loss = train_loss / (batch_idx + 1)
     epoch_total_acc = 100. * correct / total
@@ -140,7 +147,9 @@ def test(epoch):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                          % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
-        
+
+            tb.add_scalar('Test Loss', test_loss/(batch_idx+1), epoch)
+            tb.add_scalar('Test Acc', 100.*correct/total, epoch)
     
 
     # Save checkpoint.
@@ -211,14 +220,6 @@ def check_feature_size():
 
 # check_feature_size()
 
-for epoch in range(start_epoch, start_epoch+args.num_epochs):
-    train(epoch)
-    test(epoch)
-    scheduler.step()
-    print(f"Learning rate: {scheduler.get_last_lr()[0]}")
-
-plot_loss_acc()
-
 # visualize the first image of the input mini-batch in RGB space. and check the range of each rgb channel
 # images, labels = next(iter(trainloader))
 # print(f"R: {images[0][0].min()} - {images[0][0].max()}")
@@ -228,3 +229,35 @@ plot_loss_acc()
 # plt.imshow(npimg[0].transpose(1, 2, 0))
 # plt.title(f"Label: {classes[labels[0]]}")
 # plt.show()
+
+def visualize_kernels(epoch, net, title, which_conv):
+    
+    if which_conv == 'conv1':
+        kernels = net.module.conv1.weight.data.cpu().numpy()
+        fig, axes = plt.subplots(2, 3, figsize=(10, 15))
+    elif which_conv == 'conv2':
+        kernels = net.module.conv2.weight.data.cpu().numpy()
+        fig, axes = plt.subplots(4, 4, figsize=(10, 10))
+    
+    fig.suptitle(f'{title} {which_conv} Kernels at Epoch {epoch}', fontsize=16)
+
+    for i, ax in enumerate(axes.flat):
+        kernel = kernels[i, 0, :, :]
+        ax.imshow(kernel, cmap='viridis')
+        ax.axis('off')
+        ax.set_title(f'Kernel {i+1}')
+
+    plt.tight_layout()
+    plt.savefig(f'{title}_kernels_{which_conv}_epoch_{epoch}.png')
+
+for epoch in range(start_epoch, start_epoch+args.num_epochs):
+    train(epoch)
+    test(epoch)
+    scheduler.step()
+    print(f"Learning rate: {scheduler.get_last_lr()[0]}")
+
+    if epoch == 0 or epoch == 100:
+        visualize_kernels(epoch, net, 'LeNet' if not args.batch_norm else 'LeNet-BN', 'conv1')
+        visualize_kernels(epoch, net, 'LeNet' if not args.batch_norm else 'LeNet-BN', 'conv2')
+
+# plot_loss_acc()
